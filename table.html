@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Ajouter une table</h1>
+    <input type="text" id="numeroTable" placeholder="Numéro de la table">
+    <input type="text" id="typeTable" placeholder="Type de la table">
+    <button onclick="ajouterTable()">Ajouter</button>
+</body>
+<script>
+    function ajouterTable() {
+        const numero = document.getElementById('numeroTable').value;
+        const type = document.getElementById('typeTable').value;
+    
+        axios.post('http://localhost:3000/api/tables', {
+            numero: numero,
+            type: type
+        })
+        .then(function (response) {
+            console.log(response.data);
+            alert('Table ajoutée avec succès !');
+        })
+        .catch(function (error) {
+            console.error(error);
+            alert('Une erreur s\'est produite lors de l\'ajout de la table.');
+        });
+    }
+</script>
+</html>

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choisir des plats</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <button type="button" class="btn btn-primary" >
+    <a href="#ex1" rel="modal:open">Open Modal</a>
+  </button>
+
+
+  <div class="row">
+    <div class="col-6">
+      <input type="text" id="searchInput" placeholder="Rechercher par nom, plat ou prix">
+      <ul id="commandesList" class="d-flex col"></ul>
+    </div>
+  
+    
+  </div>
+
+
+
+    
+    <div id="ex1" class="modal col-md-7 offset-md-4">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Ajout Commande</h5>
+            
+          </div>
+          <div class="modal-body">
+            <form id="ajouterCommandeForm">
+  
+              <label for="nomCommandeur">Ticket de commande :</label>
+              <input type="text" id="numCmd" placeholder="Ticket du Commande">
+      
+              <label for="nomCommandeur">Nom du commandeur :</label>
+              <input type="text" id="nomCommandeur" placeholder="Nom du commandeur">
+      
+              <label for="typeCommande">Type de commande :</label>
+              <select id="typeCommande">
+                  <option value="à emporter">emporter</option>
+                  <option value="à livrer">livrer</option>
+              </select>
+      
+              <div id="lieuLivraisonInput">
+                  <label for="lieuLivraison">Lieu de livraison :</label>
+                  <input type="text" id="lieuLivraison" placeholder="Numéro de table ou adresse">
+              </div>
+      
+              <h2>Choix des plats</h2>
+              <div id="platsContainer">
+                  <!-- Les plats seront générés dynamiquement ici -->
+              </div>
+      
+             
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><a href="#" rel="modal:close">Close</a></button>
+            <button type="submit" class="btn btn-primary" onclick="AjouterCommande();">Ajouter la commande</button>
+          </div>
+        </div>
+      </div>
+     
+     
+      </form>
+    </div>
+
+   
+
+
+    
+
+   
+
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.min.js"></script>
+
+<script>
+
+    function chargerTypesPlats() {
+        $.get('http://localhost:3000/api/typesPlats', function(typesPlats) {
+            // Pour chaque type de plat, créer une section avec ses plats correspondants
+            typesPlats.forEach(function(typePlat) {
+                var section = '<div class="type-plat" style="display:inline-block;">';
+                section += '<h3>' + typePlat + '</h3>';
+                section += '<div class="plats">';
+                
+                // Appel de la fonction pour charger les plats de ce type
+                chargerPlats(typePlat, function(plats) {
+                    // Pour chaque plat, créer une carte avec un checkbox
+                    plats.forEach(function(plat) {
+                       $val = plat.type
+                        var card = '<div class="plat">';
+                        card += '<input type="checkbox" name="platsChoisis" value="' + plat.id + '"> ';
+                        card += plat.nom + ' - ' + plat.prix  ;
+                        card+= '<input type="number" name="quantitePlat" value="0" min="0">';
+                        card += '<span style="display:none;">' + plat.type + '</span>';
+                        card += '</div>';
+        
+                        // Ajouter la carte à la section des plats
+                        section += card;
+                    });
+    
+                    // Fermer la section des plats
+                    section += '</div></div>';
+    
+                    // Ajouter la section au conteneur des plats    
+                    $('#platsContainer').append(section);
+                });
+            });
+        });
+    }
+    
+    // Fonction pour récupérer les plats d'un type spécifique depuis le serveur
+    function chargerPlats(typePlat, callback) {
+        $.get('http://localhost:3000/api/plats/' + typePlat, function(plats) {
+            callback(plats);
+        });
+    }
+    
+   
+
+    $(document).ready(function() {
+        chargerTypesPlats();
+        
+    });
+    
+  
+
+    function AjouterCommande() {
+        // Récupérer le nom du commandeur
+       var nomCommandeur = $('#nomCommandeur').val();
+       var numCmd = $('#numCmd').val();
+    
+        // Récupérer le type de commande
+
+       const typeCommande = document.getElementById('typeCommande').value;
+    
+        // Récupérer le lieu de livraison
+        var lieuLivraison = $('#lieuLivraison').val();
+    
+        // Tableau pour stocker les plats sélectionnés
+        var platsChoisis = [];
+        var TypePlat=[]
+        var NomPlat = []
+        var PricePlat = []
+        var prixTotal = 0 ; 
+        var QtePlat = []
+        // Parcourir les cases à cocher pour récupérer les plats sélectionnés
+        $('input[name="platsChoisis"]:checked').each(function() {
+            var platId = $(this).val();
+            var platNom = $(this).parent().text().trim().split(' - ')[0]; // Récupérer le nom du plat
+            var platPrix = $(this).parent().text().trim().split(' - ')[1]; // Récupérer le prix du plat
+            var platType = $(this).parent().find('span').text();
+            var quantite = $(this).siblings('input[name="quantitePlat"]').val();
+            QtePlat.push(quantite)
+            TypePlat.push(platType)
+            NomPlat.push(platNom)
+            PricePlat.push(platPrix)
+            prixTotal += parseInt(platPrix*quantite)
+        });
+
+
+      for(i=0;i<NomPlat.length;i++){
+        console.log('Plats choisis :', QtePlat[i],NomPlat[i],PricePlat[i]);
+
+        $.ajax({
+            url: 'http://localhost:3000/api/commandes',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                numCmd: numCmd,
+                nomCommandeur: nomCommandeur,
+                typeCommande: typeCommande,
+                typePlat: TypePlat[i],
+                qtePlat: parseInt(QtePlat[i]),
+                nomPlat: NomPlat[i],
+                prixPlat: parseInt(PricePlat[i]),
+                lieuLivraison: lieuLivraison,
+                prixTotal: parseInt(prixTotal)},
+              ),
+            success: function(response) {
+              // Traitement à effectuer en cas de succès (optionnel)
+              console.log('Commande ajoutée avec succès :', response);
+            },
+            error: function(error) {
+              // Traitement à effectuer en cas d'erreur (optionnel)
+              console.error('Erreur lors de l\'ajout de la commande :', error);
+            }
+          });
+       }
+  
+    };
+
+    function afficherToutesCommandes() {
+        $.get('http://localhost:3000/api/commandes', function(commandes) {
+            afficherCommandes(commandes); // Afficher toutes les commandes lors du chargement de la page
+        });
+    }
+
+    function rechercherCommandes() {
+        var searchValue = $('#searchInput').val().toLowerCase();
+
+        // Envoyer la valeur de recherche à votre API backend
+        $.get('http://localhost:3000/api/commandes', { search: searchValue }, function(commandes) {
+          
+            
+           if(commandes.length>0)   afficherCommandes(commandes);
+           else alert("n'existe pas")
+        });
+    }
+
+    // Fonction pour afficher les commandes dans le HTML
+    function afficherCommandes(commandes) {
+        var commandesRegroupees = {}; // Objet pour stocker les commandes regroupées
+
+        // Regrouper les commandes par numéro de commande et nom du commandeur
+        commandes.forEach(function(commande) {
+            var key = commande.numCmd + '-' + commande.nomCommandeur; // Clé unique pour regrouper les commandes
+
+            if (!commandesRegroupees[key]) {
+                commandesRegroupees[key] = []; // Initialiser un tableau vide si la clé n'existe pas encore
+            }
+            commandesRegroupees[key].push(commande); // Ajouter la commande au tableau correspondant à la clé
+        });
+
+        var $commandesList = $('#commandesList');
+        $commandesList.empty(); // Effacer la liste précédente
+
+
+
+        for (var key in commandesRegroupees) {
+            var commandesGroupees = commandesRegroupees[key];
+            var $commandeCard = $('<br><div class="card" style="margin:10px;">');
+            var $cardBody = $('<div class="card-body">');
+        
+            // En-tête de la carte avec un bouton Modifier
+            var $header = $('<h5 class="card-title">');
+            $header.append('Numéro de commande: ' + commandesGroupees[0].numCmd +  '  ||');
+            
+            // Bouton Modifier
+            var $btnAjouter = $('<br><br><button class="btn btn-primary btn-sm mr-4" style="margin-right: 10px;margin-left: 20px;">').text('Ajouter');
+            var $btnAnnuler = $('<button class="btn btn-warning btn-sm ma-4" style="margin-right: 10px;">').text('Annuler');
+            var $btnTraiter = $('<button class="btn btn-success btn-sm ma-2" style="margin-right: 10px;">').text('Traité');
+            var $btnModifier = $('<button class="btn btn-secondary btn-sm ma-2" style="margin-right: 10px;">').text('Modifier');
+
+
+            $btnAjouter.on('click', function() {
+                var id = commandesGroupees[0].numCmd
+                $.get('http://localhost:3000/api/commandes/'+ id, function(commandes) {
+                    // Pour chaque type de plat, créer une section avec ses plats correspondants
+                        const idCommandeArray = [];
+                        const nomCommandeurArray= [];
+                        const numCmdArray = [];
+                        const nomPlatArray = [];
+                        const lieuLivraisonArray = [];
+                        const prixPlatArray = [];
+                        const QteplatArray = []
+                        const typeCmdArray = []
+                        const typePlatArray = []
+
+                        // Parcourir chaque objet JSON dans le tableau commandes
+                        commandes.forEach(commande => {
+                            // Stocker les valeurs de chaque propriété dans les tableaux respectifs
+                            idCommandeArray.push(commande.idCommande);
+                            nomCommandeurArray.push(commande.nomCommandeur)
+                            numCmdArray.push(commande.numCmd);
+                            nomPlatArray.push(commande.nomPlat);
+                            lieuLivraisonArray.push(commande.lieuLivraison);
+                            prixPlatArray.push(commande.prixPlat);
+                            QteplatArray.push(commande.qtePlat)
+                            typeCmdArray.push(commande.typeCommande)
+                            typePlatArray.push(commande.typePlat)
+                        });
+
+                      
+                        $('input[name="platsChoisis"]').each(function(index) {
+                            var platNom = $(this).parent().text().trim().split(' - ')[0]; 
+                            // Récupérer le nom du plat
+                            var platIndex = nomPlatArray.indexOf(platNom); // Rechercher l'indice du plat dans le tableau NomPlat
+                            if (platIndex !== -1) {
+                                $(this).prop('checked', true); // Cocher la case si le nom du plat est dans le tableau
+                                var quantite = QteplatArray[platIndex]; // Récupérer la quantité correspondante dans le tableau QtePlat
+                                $(this).siblings('input[name="quantitePlat"]').val(quantite); // Assigner la quantité à l'input de quantité
+                                var prixPlatText = $(this).parent().text().trim().split(' - ')[1]; // Récupérer le texte du prix du plat
+                                var prixPlat = parseFloat(prixPlatText.match(/\d+(\.\d+)?/)[0]); // Extraire le prix du plat de la chaîne de texte
+                                var typePlat = typePlatArray[platIndex]; // Récupérer le type de plat correspondant
+                                $(this).parent().append('<span style="display:none;"> ' + typePlat + '</span>'); // Ajouter le type de plat à côté du plat
+                                $(this).parent().append('<span style="display:none;"> ' + prixPlat + '</span>'); // Ajouter le prix du plat à côté du plat
+                            }
+                        });
+                        
+                        
+
+                        $('#nomCommandeur').val();
+                        $('#numCmd').val(numCmdArray[0]);
+                    
+                        document.getElementById('typeCommande').value = typeCmdArray[0];
+                        var lieuLivraison = $('#lieuLivraison').val(lieuLivraisonArray[0]);
+                        $('#nomCommandeur').val(nomCommandeurArray[0]);
+
+
+                });
+
+        });
+
+        $btnModifier.on('click', function() {
+
+            var nomCommandeur = $('#nomCommandeur').val();
+            var numCmd = $('#numCmd').val();
+            var lieuLivraison = $('#lieuLivraison').val();
+            var typeCmd = document.getElementById('typeCommande').value ;
+            const NomPlatUpdate = [];
+            const lieuLivraisonUpdate = [];
+            const PricePlatUpdate = [];
+            const QteplatUpdate = []
+            const typeCmdUpdate = []
+            const typePlatUpdate = []
+            var prixTotal = 0;
+            const prixPlatArray = []
+            const typePlatArray = []
+            var typePlatUniqueArray = [];
+
+            $('input[name="platsChoisis"]:checked').each(function() {
+                var platNom = $(this).parent().text().trim().split(' - ')[0]; 
+                var prixPlatText = $(this).parent().text().trim().split(' - ')[1];
+                var prixPlat = parseFloat(prixPlatText.match(/\d+(\.\d+)?/)[0]); 
+
+                var platType = $(this).parent().find('span').text();
+
+                // Vérifier si le plat n'existe pas déjà dans les tableaux
+                if (!prixPlatArray.includes(prixPlat)) {
+                    prixPlatArray.push(prixPlat);
+                }
+
+                if (!typePlatArray.includes(platType) ) {
+                    typePlatArray.push(platType);
+                }
+
+                var quantite = $(this).siblings('input[name="quantitePlat"]').val();
+                QteplatUpdate.push(quantite)
+                //typePlatUpdate.push(premierTypePlat)
+                NomPlatUpdate.push(platNom)
+               // PricePlatUpdate.push(prixPlat)
+                prixTotal += parseInt(prixPlat*quantite)
+            });
+
+            typePlatArray.forEach(function(element) {
+                var sousChaines = element.split(' '); // Divise la chaîne en un tableau de sous-chaînes
+                var premierTypePlat = sousChaines[0]; // Récupère le premier élément
+            
+                // Vérifie si le premierTypePlat n'est pas déjà présent dans typePlatUniqueArray
+                if (!typePlatUniqueArray.includes(premierTypePlat)) {
+                    typePlatUpdate.push(premierTypePlat); // Ajoute le premier élément à typePlatUniqueArray
+                }
+            });
+
+            for(i=0;i<NomPlatUpdate.length;i++){
+                console.log('Plats choisis :'+ QteplatUpdate[i]+'/'+NomPlatUpdate[i]+'/'+prixPlatArray[i]+'/'+numCmd+'/'+ typePlatUpdate[i]+'/'+prixTotal);
+
+
+
+                $.ajax({
+                    url: 'http://localhost:3000/api/commandes/'+numCmd,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        numCmd: numCmd,
+                        nomCommandeur: nomCommandeur,
+                        typeCommande: typeCmd,
+                        typePlat: typePlatUpdate[i],
+                        qtePlat: parseInt(QteplatUpdate[i]),
+                        nomPlat: NomPlatUpdate[i],
+                        prixPlat: parseInt(prixPlatArray[i]),
+                        lieuLivraison: lieuLivraison,
+                        prixTotal: parseInt(prixTotal)},
+                      ),
+                    success: function(response) {
+                      // Traitement à effectuer en cas de succès (optionnel)
+                      console.log('Commande Modifé avec succès :', response);
+                    },
+                    error: function(error) {
+                      // Traitement à effectuer en cas d'erreur (optionnel)
+                      console.error('Erreur lors de l\'ajout de la commande :', error);
+                    }
+                  })
+                  
+                $.ajax({
+                    url: 'http://localhost:3000/api/commandes',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        numCmd: numCmd,
+                        nomCommandeur: nomCommandeur,
+                        typeCommande: typeCmd,
+                        typePlat: typePlatUpdate[i],
+                        qtePlat: parseInt(QteplatUpdate[i]),
+                        nomPlat: NomPlatUpdate[i],
+                        prixPlat: parseInt(prixPlatArray[i]),
+                        lieuLivraison: lieuLivraison,
+                        prixTotal: parseInt(prixTotal)},
+                      ),
+                    success: function(response) {
+                      // Traitement à effectuer en cas de succès (optionnel)
+                      console.log('Commande Modifé avec succès :', response);
+                    },
+                    error: function(error) {
+                      // Traitement à effectuer en cas d'erreur (optionnel)
+                      console.error('Erreur lors de l\'ajout de la commande :', error);
+                    }
+                  })
+            
+            }
+            
+        
+        })
+      
+
+        $header.append($btnAjouter); // Ajouter le bouton Modifier à l'en-tête
+        $header.append($btnAnnuler)
+        $header.append($btnTraiter)
+        $header.append($btnModifier)
+        
+        
+
+        var $platsList = $('<ul>');
+            $platsList.append($('<h4>').text('Nom Commandeur: ' +commandesGroupees[0].nomCommandeur));
+
+                var prixTotalPlat = 0; 
+        commandesGroupees.forEach(function(commande) {
+
+           // Initialiser la variable prixTotalPlat à 0
+            commandesGroupees.forEach(function(commande) {
+                prixTotalPlat += (commande.prixPlat*commande.qtePlat); // Ajouter chaque valeur de prixPlat à prixTotalPlat
+             });
+
+            
+            var $platItem = $('<li>').text('Plat: ' + commande.nomPlat + ', Prix Plat: ' + commande.prixPlat +'$\t'+ ' Quantité :'+ commande.qtePlat+  '- Type : '+ commande.typePlat+ ' ||' + '\t');             
+            
+
+
+                   
+            var $btnEnlever = $('<button class="btn btn-danger btn-sm">').text( 'Enlever');
+                
+       
+            
+            // Ajouter l'événement au bouton Enlever un plat de la commande (à implémenter)
+            $btnEnlever.on('click', function() {
+                var id= commande.idCommande;
+                $.ajax({
+                    url: 'http://localhost:3000/api/commandes/'+id,
+                    type: 'DELETE',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                      id: commande.idCommande
+                    }),
+                    success: function(response) {
+                      // Traitement à effectuer en cas de succès (optionnel)
+                      console.log('Commande ajoutée avec succès :', response);
+                    },
+                    error: function(error) {
+                      // Traitement à effectuer en cas d'erreur (optionnel)
+                      console.error('Erreur lors de la suppression de la plat du  commande :', error);
+                    }
+                  });
+            });
+            
+            $platItem.append($btnEnlever); // Ajouter le bouton Enlever à l'élément du plat
+            $platsList.append($('<br>').text('')) 
+         
+            $platsList.append($platItem);
+            
+        });
+
+
+        $btnAnnuler.on('click', function() { 
+            var chaine = ''
+           //var $Concat= 'Ticket de Commande:'+commande.numCmd+'Plat: ' + commande.nomPlat + ', Prix Plat: ' + commande.prixPlat +'$\t'+ ' Quantité :'+ commande.qtePlat+  '- Type : '+ commande.typePlat+ '- Addition : '+ prixTotalPlat;
+   
+           commandesGroupees.forEach(function(commande) {
+               chaine += '|'+'Ticket de Commande:'+commande.numCmd+' '+'Plat: ' + commande.nomPlat + ', Prix Plat: ' + commande.prixPlat +'$\t'+ ' Quantité :'+ commande.qtePlat+  '- Type : '+ commande.typePlat;
+           });
+   
+              
+                   $.ajax({
+                       url: 'http://localhost:3000/api/journals',
+                       type: 'POST',
+                       contentType: 'application/json',
+                       data: JSON.stringify({
+                         numCmd: commandesGroupees[0].numCmd,
+                         nomCommandeur: commandesGroupees[0].nomCommandeur,
+                         Description :  chaine, 
+                         Statut : 'annulé',
+                         Addition: prixTotalPlat
+                       }),
+                       success: function(response) {
+                         // Traitement à effectuer en cas de succès (optionnel)
+                         console.log('Commande ajoutée avec succès :', response);
+                       },
+                       error: function(error) {
+                         // Traitement à effectuer en cas d'erreur (optionnel)
+                         console.error('Erreur lors de l\'suppression de la commande :', error);
+                       }
+                     });
+                  $.ajax({
+                          url: 'http://localhost:3000/api/commandes/'+commandesGroupees[0].numCmd,
+                          type: 'DELETE',
+                          contentType: 'application/json',
+                          data: JSON.stringify({
+                            id: commandesGroupees[0].numCmd
+                          }),
+                          success: function(response) {
+                            // Traitement à effectuer en cas de succès (optionnel)
+                            console.log('Commande ajoutée avec succès :', response);
+                          },
+                          error: function(error) {
+                            // Traitement à effectuer en cas d'erreur (optionnel)
+                            console.error('Erreur lors de l\'suppression de la commande :', error);
+                          }
+                        });
+                      
+              });
+                  
+     
+
+        //reparcour du tableau commandesGrouper pour avoir l'addition pour chaque commande
+        var prixTotalPlat = 0;
+            commandesGroupees.forEach(function(commande) {
+                prixTotalPlat += (commande.prixPlat*commande.qtePlat); // Ajouter chaque valeur de prixPlat à prixTotalPlat
+            });
+
+        //Action à faire quand la commande est traité<
+            $btnTraiter.on('click', function() {
+
+               var chaine = ''
+        
+                commandesGroupees.forEach(function(commande) {
+                    chaine += '|'+'Ticket de Commande:'+commande.numCmd+''+'Plat: ' + commande.nomPlat + ', Prix Plat: ' + commande.prixPlat +'$\t'+ ' Quantité :'+ commande.qtePlat+  '- Type : '+ commande.typePlat;
+                    console.log(chaine)
+                });
+
+
+                //var id = commande.numCmd
+                console.log(prixTotalPlat)
+                console.log(commandesGroupees[0].nomCommandeur)
+                console.log(parseFloat(prixTotalPlat*0.5))
+                //console.log(commande.nomPlat)
+               $.ajax({
+                    url: 'http://localhost:3000/api/recettes',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                      numCmd: commandesGroupees[0].numCmd,
+                      nomCommandeur: commandesGroupees[0].nomCommandeur,
+                      addition :  prixTotalPlat, 
+                      bénéfice : parseFloat(prixTotalPlat*0.5)
+                       
+                    },
+                      ),
+                    success: function(response) {
+                      // Traitement à effectuer en cas de succès (optionnel)
+                      console.log('Commande traité avec succès et Recette ajoutée avec succès :', response);
+                    },
+                    error: function(error) {
+                      // Traitement à effectuer en cas d'erreur (optionnel)
+                      console.error('Erreur lors de l\'ajout de la Recette :', error);
+                    }
+                  });
+                
+                  $.ajax({
+                    url: 'http://localhost:3000/api/journals',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                      numCmd: commandesGroupees[0].numCmd,
+                      nomCommandeur: commandesGroupees[0].nomCommandeur,
+                      Description :  chaine, 
+                      Statut : 'traité',
+                      Addition: prixTotalPlat
+                    }),
+                    success: function(response) {
+                      // Traitement à effectuer en cas de succès (optionnel)
+                      console.log('Commande ajoutée avec succès :', response);
+                    },
+                    error: function(error) {
+                      // Traitement à effectuer en cas d'erreur (optionnel)
+                      console.error('Erreur lors de ajout du commande dans le journal :', error);
+                    }
+                  });
+                  $.ajax({
+                    url: 'http://localhost:3000/api/commandes/'+commandesGroupees[0].numCmd,
+                    type: 'DELETE',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                      id: commandesGroupees[0].numCmd
+                    }),
+                    success: function(response) {
+                      // Traitement à effectuer en cas de succès (optionnel)
+                      console.log('Commande ajoutée avec succès :', response);
+                    },
+                    error: function(error) {
+                      // Traitement à effectuer en cas d'erreur (optionnel)
+                      console.error('Erreur lors de l\'suppression de la commande :', error);
+                    }
+                  });
+                       
+                    
+             });
+
+        $cardBody.append($header); 
+        $cardBody.append($platsList); // Ajouter la liste des plats à la carte
+        $platsList.append($('<br>').text(''));
+        $platsList.append($('<h2>').text('Addition: ' + prixTotalPlat +'$'));
+        $commandeCard.append($cardBody);
+        $commandesList.append($commandeCard);
+    }
+    
+}
+
+// Parcourir les commandes regroupées et afficher chaque groupe dans une carte
+
+
+
+
+    $(document).ready(function() {
+        afficherToutesCommandes()
+        $('#searchInput').on('keyup', rechercherCommandes);
+    });
+
+
+
+</script>
+
+
+</html>

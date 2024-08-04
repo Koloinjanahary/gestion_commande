@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plat</title>
+</head>
+<body>
+    <h1>Ajouter un plat</h1>
+    <input type="text" id="nomPlat" placeholder="Nom du plat">
+    <select id="typePlat">
+        <option value="entree">Entrée</option>
+        <option value="plat_resistance">Plat de résistance</option>
+        <option value="aperitif">Apéritif</option>
+        <option value="dessert">Dessert</option>
+        <option value="boisson">Boisson</option>
+      </select>
+    <input type="number" id="prixPlat" placeholder="Prix du plat">
+    <button onclick="ajouterPlat()">Ajouter</button>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.min.js"></script>
+<script>
+    function ajouterPlat() {
+        const nom = document.getElementById('nomPlat').value;
+        const type = document.getElementById('typePlat').value;
+        const prix = document.getElementById('prixPlat').value;
+    
+        axios.post('http://localhost:3000/api/plats', {
+            nom: nom,
+            type: type,
+            prix: prix
+        })
+        .then(function (response) {
+            console.log(response.data);
+            alert('Plat ajouté avec succès !');
+        })
+        .catch(function (error) {
+            console.error(error);
+            alert('Une erreur s\'est produite lors de l\'ajout du plat.');
+        });
+    }
+</script>
+</html>
